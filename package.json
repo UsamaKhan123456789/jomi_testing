@@ -3,12 +3,6 @@
   "version": "1.0.0",
   "description": "Serverless function for deep link redirects",
   "scripts": {
-    "dev": "vercel dev",
-    "deploy": "vercel --prod"
-  },
-  "dependencies": {},
-  "devDependencies": {
-    "vercel": "^32.0.0"
+    "dev": "vercel dev"
   }
 }
-
