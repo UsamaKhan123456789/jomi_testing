@@ -1,7 +1,1 @@
-{
-  "functions": {
-    "api/article/[articleId].js": {
-      "runtime": "nodejs18.x"
-    }
-  }
-}
+{}
