@@ -1,5 +1,5 @@
 // Vercel Serverless Function for Deep Link Redirect
-// This file should be at: /api/article/[articleId].js
+// Path: /api/article/[articleId].js
 
 export default function handler(req, res) {
   const { articleId } = req.query;
@@ -10,7 +10,13 @@ export default function handler(req, res) {
   
   // Validate articleId
   if (!articleId || articleId.trim() === '') {
-    return res.status(400).json({ error: 'Article ID is required' });
+    return res.status(400).send(`
+      <!DOCTYPE html>
+      <html>
+      <head><title>Error</title></head>
+      <body><h1>Article ID is required</h1></body>
+      </html>
+    `);
   }
   
   if (isMobile) {
@@ -70,9 +76,6 @@ export default function handler(req, res) {
           .button:hover {
             transform: scale(1.05);
           }
-          .button:active {
-            transform: scale(0.95);
-          }
         </style>
       </head>
       <body>
@@ -95,7 +98,7 @@ export default function handler(req, res) {
       </html>
     `);
   } else {
-    // Desktop: Show web page with "Open in App" button and QR code option
+    // Desktop: Show web page with "Open in App" button
     return res.status(200).send(`
       <!DOCTYPE html>
       <html lang="en">
@@ -154,16 +157,6 @@ export default function handler(req, res) {
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
           }
-          .qr-section {
-            margin-top: 30px;
-            padding-top: 30px;
-            border-top: 1px solid rgba(255, 255, 255, 0.2);
-          }
-          .qr-text {
-            font-size: 14px;
-            margin-bottom: 15px;
-            opacity: 0.8;
-          }
           .link {
             background: rgba(255, 255, 255, 0.2);
             padding: 15px;
@@ -179,24 +172,8 @@ export default function handler(req, res) {
           <h1>📱 Open in Jomi App</h1>
           <p>Scan this page with your mobile device or use the button below to open the article in the Jomi app.</p>
           <a href="jomi://article/${articleId}" class="button">Open in App</a>
-          <div class="qr-section">
-            <p class="qr-text">Or scan this QR code with your phone:</p>
-            <div id="qrcode"></div>
-            <div class="link">jomi://article/${articleId}</div>
-          </div>
+          <div class="link">jomi://article/${articleId}</div>
         </div>
-        <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-        <script>
-          // Generate QR code
-          new QRCode(document.getElementById("qrcode"), {
-            text: "jomi://article/${articleId}",
-            width: 200,
-            height: 200,
-            colorDark: "#000000",
-            colorLight: "#ffffff",
-            correctLevel: QRCode.CorrectLevel.H
-          });
-        </script>
       </body>
       </html>
     `);
