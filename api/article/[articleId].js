@@ -126,11 +126,11 @@ export default function handler(req, res) {
             });
             
             // Redirect to web if app doesn't open within 1.5 seconds
-            setTimeout(function() {
-              if (!appOpened && ${webUrl ? 'webUrl' : 'false'}) {
+            ${webUrl ? `setTimeout(function() {
+              if (!appOpened) {
                 window.location.replace(webUrl);
               }
-            }, 1500);
+            }, 1500);` : ''}
             
             // Final safety redirect after 3 seconds
             ${webUrl ? `setTimeout(function() {
