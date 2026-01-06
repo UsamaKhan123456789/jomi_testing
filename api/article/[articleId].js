@@ -13,7 +13,7 @@ export default function handler(req, res) {
     return res.status(400).json({ error: 'Article ID is required' });
   }
   
-  // Build web URL: https://jomi.com/article/{publicationId}/{slug}
+  // Build web URL only if we have publicationId and slug
   const webUrl = (publicationId && slug) 
     ? `https://jomi.com/article/${publicationId}/${slug}`
     : null;
@@ -22,7 +22,7 @@ export default function handler(req, res) {
   const appDeepLink = `jomi://article/${articleId}`;
   
   if (isMobile) {
-    // Mobile: Try to open app, fallback to web
+    // Mobile: Try to open app, fallback to web if app not installed AND webUrl is available
     return res.status(200).send(`
 <!DOCTYPE html>
 <html>
@@ -43,8 +43,8 @@ body{font-family:system-ui;display:flex;flex-direction:column;align-items:center
 <div class="container">
 <div class="spinner"></div>
 <h1>Opening in Jomi App...</h1>
-<p>If the app doesn't open, you'll be redirected...</p>
-${webUrl ? `<a href="${webUrl}" class="button">Continue to Website</a>` : ''}
+<p>${webUrl ? 'If the app doesn\'t open, you\'ll be redirected to the website...' : 'Opening the app...'}</p>
+${webUrl ? `<a href="${webUrl}" class="button">Continue to Website</a>` : `<a href="${appDeepLink}" class="button">Open in App</a>`}
 </div>
 <script>
 (function(){
@@ -67,7 +67,7 @@ ${webUrl ? `setTimeout(()=>{if(document.visibilityState==='visible')window.locat
 </html>
     `);
   } else {
-    // Desktop: Redirect to web URL
+    // Desktop: Redirect to web URL if available, otherwise show "Open in App" page
     if (webUrl) {
       res.writeHead(302, { 'Location': webUrl });
       return res.end();
