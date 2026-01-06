@@ -2,7 +2,9 @@
 // Path: /api/article/[articleId].js
 
 export default function handler(req, res) {
-  const { articleId, pubId, slug } = req.query;
+  // Handle both pubId and publd (typo) for backward compatibility
+  const { articleId, pubId, publd, slug } = req.query;
+  const publicationId = pubId || publd;
   
   // Get user agent to detect mobile devices
   const userAgent = req.headers['user-agent'] || '';
@@ -20,8 +22,8 @@ export default function handler(req, res) {
   }
   
   // Build web URL: https://jomi.com/article/{publicationId}/{slug}
-  const webUrl = (pubId && slug) 
-    ? `https://jomi.com/article/${pubId}/${slug}`
+  const webUrl = (publicationId && slug) 
+    ? `https://jomi.com/article/${publicationId}/${slug}`
     : null;
   
   // App deep link: jomi://article/{articleId}
