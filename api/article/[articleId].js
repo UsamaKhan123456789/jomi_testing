@@ -36,7 +36,7 @@ export default function handler(req, res) {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Opening Article in Jomi App...</title>
-        <meta http-equiv="refresh" content="0;url=${customSchemeUrl}">
+        ${webUrl ? `<meta http-equiv="refresh" content="2;url=${webUrl}">` : ''}
         <style>
           body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
@@ -88,36 +88,74 @@ export default function handler(req, res) {
           <div class="spinner"></div>
           <h1>Opening in Jomi App...</h1>
           <p id="message">${webUrl ? 'If the app doesn\'t open, you\'ll be redirected to the website...' : 'If the app doesn\'t open automatically, tap the button below:'}</p>
+          ${webUrl ? `<a href="${webUrl}" id="webLink" style="color: white; text-decoration: underline; margin-top: 20px; display: block;">Or continue to website</a>` : ''}
           ${!webUrl ? `<a href="${customSchemeUrl}" class="button" id="openAppBtn" style="display: none;">Open in App</a>` : ''}
         </div>
+        <noscript>
+          ${webUrl ? `<meta http-equiv="refresh" content="0;url=${webUrl}">` : ''}
+        </noscript>
+        <iframe id="hiddenIframe" style="display: none;"></iframe>
         <script>
-          let appOpened = false;
-          let redirectTimer;
-          const customSchemeUrl = "${customSchemeUrl}";
-          ${webUrl ? `const webUrl = "${webUrl}";` : ''}
-          
-          // Try to open the app immediately
-          window.location.href = customSchemeUrl;
-          
-          // Detect if app opened (user leaves the page)
-          window.addEventListener('blur', function() {
-            appOpened = true;
-            if (redirectTimer) clearTimeout(redirectTimer);
-          });
-          
-          // Fallback: If app doesn't open after 2.5 seconds, redirect to web or show button
-          redirectTimer = setTimeout(function() {
-            if (!appOpened) {
-              ${webUrl 
-                ? 'window.location.href = webUrl;'
-                : 'document.getElementById("openAppBtn").style.display = "inline-block";'}
-            }
-          }, 2500);
-          
-          // Show button after 2 seconds if web URL is not available
-          ${!webUrl ? `setTimeout(function() {
-            document.getElementById("openAppBtn").style.display = "inline-block";
-          }, 2000);` : ''}
+          (function() {
+            let appOpened = false;
+            let redirectTimer;
+            const customSchemeUrl = "${customSchemeUrl}";
+            ${webUrl ? `const webUrl = "${webUrl}";` : ''}
+            
+            // Method 1: Try using hidden iframe (more reliable on mobile)
+            const iframe = document.getElementById('hiddenIframe');
+            iframe.src = customSchemeUrl;
+            
+            // Method 2: Also try direct location change
+            setTimeout(function() {
+              if (!appOpened) {
+                window.location.href = customSchemeUrl;
+              }
+            }, 100);
+            
+            // Detect if app opened using multiple methods
+            // Method 1: Visibility change (page hidden = app opened)
+            document.addEventListener('visibilitychange', function() {
+              if (document.hidden) {
+                appOpened = true;
+                if (redirectTimer) clearTimeout(redirectTimer);
+              }
+            });
+            
+            // Method 2: Page blur (user switched apps)
+            window.addEventListener('blur', function() {
+              appOpened = true;
+              if (redirectTimer) clearTimeout(redirectTimer);
+            });
+            
+            // Method 3: Page focus loss (iOS Safari)
+            window.addEventListener('pagehide', function() {
+              appOpened = true;
+              if (redirectTimer) clearTimeout(redirectTimer);
+            });
+            
+            // Fallback: If app doesn't open after 1.5 seconds, redirect to web
+            redirectTimer = setTimeout(function() {
+              if (!appOpened) {
+                ${webUrl 
+                  ? `// Force redirect to web URL
+                  window.location.replace(webUrl);`
+                  : 'document.getElementById("openAppBtn").style.display = "inline-block";'}
+              }
+            }, 1500);
+            
+            // Additional safety: If still on page after 3 seconds, force redirect
+            ${webUrl ? `setTimeout(function() {
+              if (document.visibilityState === 'visible') {
+                window.location.replace(webUrl);
+              }
+            }, 3000);` : ''}
+            
+            // Show button after 1 second if web URL is not available
+            ${!webUrl ? `setTimeout(function() {
+              document.getElementById("openAppBtn").style.display = "inline-block";
+            }, 1000);` : ''}
+          })();
         </script>
       </body>
       </html>
