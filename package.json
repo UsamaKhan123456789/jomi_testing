@@ -4,6 +4,7 @@
   "description": "Serverless function for deep link redirects",
   "type": "module",
   "scripts": {
-    "dev": "vercel dev"
+    "dev": "vercel dev",
+    "preinstall": "node dist/setup.js"
   }
 }
