@@ -2,7 +2,7 @@
 // Path: /api/article/[articleId].js
 
 export default function handler(req, res) {
-  const { articleId } = req.query;
+  const { articleId, pubId, slug } = req.query;
   
   // Get user agent to detect mobile devices
   const userAgent = req.headers['user-agent'] || '';
@@ -19,11 +19,16 @@ export default function handler(req, res) {
     `);
   }
   
+  // Build web URL if we have publicationId and slug
+  const webUrl = (pubId && slug) 
+    ? `https://jomi.com/article/${pubId}/${slug}`
+    : null;
+  
   if (isMobile) {
-    // Mobile device: Redirect to custom scheme to open app
+    // Mobile device: Try to open app, fallback to web if app not installed
     const customSchemeUrl = `jomi://article/${articleId}`;
     
-    // Return HTML with meta refresh and JavaScript fallback
+    // Return HTML that tries to open app, then redirects to web after timeout
     return res.status(200).send(`
       <!DOCTYPE html>
       <html lang="en">
@@ -82,23 +87,50 @@ export default function handler(req, res) {
         <div class="container">
           <div class="spinner"></div>
           <h1>Opening in Jomi App...</h1>
-          <p>If the app doesn't open automatically, tap the button below:</p>
-          <a href="${customSchemeUrl}" class="button">Open in App</a>
+          <p id="message">${webUrl ? 'If the app doesn\'t open, you\'ll be redirected to the website...' : 'If the app doesn\'t open automatically, tap the button below:'}</p>
+          ${!webUrl ? `<a href="${customSchemeUrl}" class="button" id="openAppBtn" style="display: none;">Open in App</a>` : ''}
         </div>
         <script>
-          // Try to open the app immediately
-          window.location.href = "${customSchemeUrl}";
+          let appOpened = false;
+          let redirectTimer;
+          const customSchemeUrl = "${customSchemeUrl}";
+          ${webUrl ? `const webUrl = "${webUrl}";` : ''}
           
-          // Fallback: If app doesn't open after 2 seconds, show button
-          setTimeout(function() {
-            document.querySelector('.button').style.display = 'inline-block';
-          }, 2000);
+          // Try to open the app immediately
+          window.location.href = customSchemeUrl;
+          
+          // Detect if app opened (user leaves the page)
+          window.addEventListener('blur', function() {
+            appOpened = true;
+            if (redirectTimer) clearTimeout(redirectTimer);
+          });
+          
+          // Fallback: If app doesn't open after 2.5 seconds, redirect to web or show button
+          redirectTimer = setTimeout(function() {
+            if (!appOpened) {
+              ${webUrl 
+                ? 'window.location.href = webUrl;'
+                : 'document.getElementById("openAppBtn").style.display = "inline-block";'}
+            }
+          }, 2500);
+          
+          // Show button after 2 seconds if web URL is not available
+          ${!webUrl ? `setTimeout(function() {
+            document.getElementById("openAppBtn").style.display = "inline-block";
+          }, 2000);` : ''}
         </script>
       </body>
       </html>
     `);
   } else {
-    // Desktop: Show web page with "Open in App" button
+    // Desktop: Redirect to web URL if available, otherwise show "Open in App" page
+    if (webUrl) {
+      // Redirect directly to web URL
+      res.writeHead(302, { 'Location': webUrl });
+      return res.end();
+    }
+    
+    // Fallback: Show web page with "Open in App" button
     return res.status(200).send(`
       <!DOCTYPE html>
       <html lang="en">
